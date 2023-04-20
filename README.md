@@ -1,2 +1,1 @@
-# my-library-jg
-a book search engine
+# Book Search Engine Starter Code
