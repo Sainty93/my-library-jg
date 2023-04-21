@@ -9,8 +9,11 @@ import {
 } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
-import { saveBook, searchGoogleBooks } from '../utils/API';
+//import { saveBook, searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
+import { useMutation } from 'apollo/client';
+import { SAVE_BOOK } from '../utils/mutations';
+import { searchGoogleBooks } from '../utils/queries';
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -19,7 +22,8 @@ const SearchBooks = () => {
   const [searchInput, setSearchInput] = useState('');
 
   // create state to hold saved bookId values
-  const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
+  const [savedBookIds, setSavedBookIds] = useState(getSavedBooksIDs());
+  const [savedBook] = useMutation(SAVE_BOOK);
 
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
@@ -36,21 +40,15 @@ const SearchBooks = () => {
     }
 
     try {
-      const response = await searchGoogleBooks(searchInput);
-
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { items } = await response.json();
+      const { data: { items }} = await searchGoogleBooks(searchInput);
 
       const bookData = items.map((book) => ({
         bookId: book.id,
         authors: book.volumeInfo.authors || ['No author to display'],
         title: book.volumeInfo.title,
         description: book.volumeInfo.description,
-        image: book.volumeInfo.imageLinks?.thumbnail || '',
-      }));
+      image: book.volumeInfo.imageLinks?. thumbnail || '',
+    }));
 
       setSearchedBooks(bookData);
       setSearchInput('');
@@ -71,12 +69,20 @@ const SearchBooks = () => {
       return false;
     }
 
-    try {
-      const response = await saveBook(bookToSave, token);
+    const { data } = Auth.loggedIn() ? Auth.getToken() : null;
+    const user = data;
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
+     if (!user) {
+      return false;
+     }
+    try {
+      await saveBookIds({
+        variables: {
+          id: user._id,
+          ...bookToSave
+        }
+      });
+    
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
