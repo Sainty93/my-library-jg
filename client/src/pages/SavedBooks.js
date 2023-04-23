@@ -72,6 +72,7 @@ const SavedBooks = () => {
         if (!token) {
           return false;
         }
+
     const { data } = Auth.getProfile(token);
     const user = data;
 
@@ -81,7 +82,7 @@ const SavedBooks = () => {
       try {
         const thisBook = await deleteBook({
           variables: {
-            id: user_id,
+            id: user._id,
             bookId: bookId
           }
         });
@@ -99,6 +100,7 @@ const SavedBooks = () => {
   //if data isnt her yet, say it
   if (!userDataLength) {
     return <h2>Loading..</h2>;
+  }
 
   return (
     <>
